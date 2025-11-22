@@ -1,0 +1,9 @@
+# Dependências
+node_modules/
+
+# Caches de build e desenvolvimento
+.cache/
+frontend/.cache/
+frontend/node_modules/
+dist/
+build/
