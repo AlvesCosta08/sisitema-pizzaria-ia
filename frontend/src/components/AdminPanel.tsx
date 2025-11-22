@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getPedidos, excluirPedido, atualizarPedido } from '../services/api';
-import { FaWhatsapp, FaEdit, FaTrash, FaSpinner, FaExclamationTriangle, FaPizzaSlice, FaPrint } from 'react-icons/fa';
+import { FaWhatsapp, FaEdit, FaTrash, FaSpinner, FaExclamationTriangle, FaPizzaSlice, FaFilePdf } from 'react-icons/fa';
 
 // --- Tipos para o Pedido ---
 interface Pedido {
@@ -53,6 +53,210 @@ const AdminPanel: React.FC = () => {
 
     fetchPedidos();
   }, []);
+
+  // --- Função para gerar PDF ---
+  const handleDownloadPDF = (pedido: Pedido) => {
+    // Cria um conteúdo HTML com o modelo solicitado
+    const conteudoPDF = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Comanda - Pedido #${pedido.id}</title>
+        <style>
+          body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            font-size: 14px;
+            line-height: 1.2;
+            color: #000;
+            background: white;
+          }
+          .header {
+            text-align: center;
+            margin-bottom: 10px;
+          }
+          .titulo {
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0;
+          }
+          .subtitulo {
+            font-size: 12px;
+            margin: 2px 0;
+          }
+          .barcode {
+            text-align: center;
+            font-family: 'Libre Barcode 128', cursive;
+            font-size: 24px;
+            margin: 10px 0;
+          }
+          .info-pedido {
+            margin: 10px 0;
+          }
+          .linha {
+            display: flex;
+            justify-content: space-between;
+            margin: 3px 0;
+          }
+          .label {
+            font-weight: bold;
+          }
+          .pizza {
+            margin: 10px 0;
+            padding: 5px 0;
+            border-top: 1px dashed #000;
+            border-bottom: 1px dashed #000;
+          }
+          .nome-pizza {
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+          }
+          .ingredientes {
+            font-size: 11px;
+            color: #555;
+          }
+          .observacoes {
+            margin: 10px 0;
+            padding: 8px;
+            background: #f5f5f5;
+            border-radius: 4px;
+          }
+          .urgente {
+            background: #ffeb3b;
+            padding: 4px;
+            text-align: center;
+            font-weight: bold;
+            margin: 5px 0;
+            border: 1px dashed #000;
+          }
+          .timestamp {
+            text-align: center;
+            margin-top: 12px;
+            font-size: 10px;
+            color: #666;
+          }
+          .btn-imprimir {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+          }
+          @media print {
+            .no-print {
+              display: none;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1 class="titulo">PIZZARIA IA</h1>
+          <p class="subtitulo">*** COMANDA COZINHA ***</p>
+        </div>
+        
+        <div class="barcode">
+          *${pedido.id.toString().padStart(6, '0')}*
+        </div>
+        
+        <div class="info-pedido">
+          <div class="linha">
+            <span class="label">PEDIDO:</span>
+            <span>#${pedido.id}</span>
+          </div>
+          <div class="linha">
+            <span class="label">CLIENTE:</span>
+            <span>${pedido.nome_cliente}</span>
+          </div>
+          <div class="linha">
+            <span class="label">TELEFONE:</span>
+            <span>${pedido.telefone_cliente}</span>
+          </div>
+          <div class="linha">
+            <span class="label">DATA/HORA:</span>
+            <span>${new Date(pedido.data_hora).toLocaleString()}</span>
+          </div>
+        </div>
+        
+        <div class="pizza">
+          <div class="nome-pizza">${pedido.pizza}</div>
+          <div class="ingredientes">
+            <strong>Ingredientes:</strong><br>
+            ${pedido.ingredientes.split(',').map(ing => `• ${ing.trim()}`).join('<br>')}
+          </div>
+        </div>
+        
+        <div class="observacoes">
+          <strong>OBSERVAÇÕES:</strong><br>
+          • Preparar com cuidado<br>
+          • Verificar qualidade<br>
+          • Entregar no balcão
+        </div>
+        
+        <div class="urgente">
+          ⚡ PREPARAR PARA ENTREGA ⚡
+        </div>
+        
+        <div class="timestamp">
+          Impresso em: ${new Date().toLocaleString()}
+        </div>
+        
+        <div class="botoes no-print" style="text-align: center; margin: 15px 0;">
+          <button class="btn-imprimir" onclick="window.print()">
+            🖨️ Imprimir Comanda
+          </button>
+          <p style="font-size: 10px; margin-top: 5px;">
+            Se a impressão não iniciar automaticamente, clique no botão acima.
+          </p>
+        </div>
+        
+        <script>
+          // Tenta imprimir automaticamente
+          window.onload = function() {
+            setTimeout(() => {
+              window.print();
+            }, 500);
+          };
+          
+          // Fecha a janela após impressão (em alguns navegadores)
+          window.onafterprint = function() {
+            setTimeout(() => {
+              window.close();
+            }, 1000);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    // Abre o conteúdo em uma nova janela para permitir impressão como PDF
+    const janelaPDF = window.open('', '_blank');
+    if (!janelaPDF) {
+      alert('Por favor, permita pop-ups para gerar o PDF.');
+      return;
+    }
+
+    janelaPDF.document.write(conteudoPDF);
+    janelaPDF.document.close();
+
+    // Fecha a janela após a impressão (opcional)
+    janelaPDF.onafterprint = () => {
+      setTimeout(() => {
+        janelaPDF.close();
+      }, 1000);
+    };
+  };
 
   // --- Função para imprimir comanda ---
   const handleImprimirComanda = (pedido: Pedido) => {
@@ -380,12 +584,12 @@ const AdminPanel: React.FC = () => {
                 <span style={styles.pedidoId}>#{pedido.id}</span>
                 <div style={styles.mobileActions}>
                   <button
-                    onClick={() => handleImprimirComanda(pedido)}
-                    style={styles.printButton}
-                    title={`Imprimir comanda do pedido #${pedido.id}`}
+                    onClick={() => handleDownloadPDF(pedido)}
+                    style={styles.pdfButton}
+                    title={`Baixar PDF da comanda do pedido #${pedido.id}`}
                   >
                     <IconWrapper>
-                      <FaPrint size={14} />
+                      <FaFilePdf size={14} />
                     </IconWrapper>
                   </button>
                   
@@ -521,7 +725,7 @@ const AdminPanel: React.FC = () => {
                           title={`Imprimir comanda do pedido #${pedido.id}`}
                         >
                           <IconWrapper>
-                            <FaPrint size={14} />
+                            <FaFilePdf size={14} />
                           </IconWrapper>
                         </button>
                         
@@ -979,6 +1183,23 @@ const styles = {
     transition: 'all 0.2s ease',
     ':hover': {
       backgroundColor: '#4b5563',
+      transform: 'translateY(-1px)',
+    },
+  },
+  
+  pdfButton: {
+    padding: '0.5rem',
+    backgroundColor: '#dc2626',
+    color: 'white',
+    border: 'none',
+    borderRadius: '6px',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transition: 'all 0.2s ease',
+    ':hover': {
+      backgroundColor: '#b91c1c',
       transform: 'translateY(-1px)',
     },
   },
