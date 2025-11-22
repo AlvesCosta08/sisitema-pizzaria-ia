@@ -26,6 +26,18 @@ const AdminPanel: React.FC = () => {
   const [editandoPedido, setEditandoPedido] = useState<Pedido | null>(null);
   const [mostrarModalEdicao, setMostrarModalEdicao] = useState(false);
   const [processando, setProcessando] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detecta se está em mobile
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
 
   useEffect(() => {
     const fetchPedidos = async () => {
@@ -357,6 +369,207 @@ const AdminPanel: React.FC = () => {
     );
   }
 
+  // Renderiza versão mobile ou desktop
+  const renderPedidos = () => {
+    if (isMobile) {
+      return (
+        <div style={styles.mobileContainer}>
+          {pedidos.map((pedido) => (
+            <div key={pedido.id} style={styles.mobileCard}>
+              <div style={styles.mobileCardHeader}>
+                <span style={styles.pedidoId}>#{pedido.id}</span>
+                <div style={styles.mobileActions}>
+                  <button
+                    onClick={() => handleImprimirComanda(pedido)}
+                    style={styles.printButton}
+                    title={`Imprimir comanda do pedido #${pedido.id}`}
+                  >
+                    <IconWrapper>
+                      <FaPrint size={14} />
+                    </IconWrapper>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleCliqueWhatsApp(pedido.telefone_cliente, pedido.nome_cliente, pedido.id)}
+                    style={styles.whatsappButton}
+                    title={`Enviar mensagem para ${pedido.nome_cliente}`}
+                  >
+                    <IconWrapper>
+                      <FaWhatsapp size={14} />
+                    </IconWrapper>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleEditarPedido(pedido)}
+                    style={styles.editButton}
+                    title={`Editar pedido #${pedido.id}`}
+                  >
+                    <IconWrapper>
+                      <FaEdit size={14} />
+                    </IconWrapper>
+                  </button>
+                  
+                  <button
+                    onClick={() => handleExcluirPedido(pedido.id)}
+                    disabled={processando}
+                    style={{
+                      ...styles.deleteButton,
+                      ...(processando ? styles.disabledButton : {})
+                    }}
+                    title={`Excluir pedido #${pedido.id}`}
+                  >
+                    <IconWrapper>
+                      {processando ? <FaSpinner size={14} style={styles.spinner} /> : <FaTrash size={14} />}
+                    </IconWrapper>
+                  </button>
+                </div>
+              </div>
+              
+              <div style={styles.mobileCardBody}>
+                <div style={styles.mobileRow}>
+                  <strong style={styles.mobileLabel}>Cliente:</strong>
+                  <span style={styles.mobileValue}>{pedido.nome_cliente}</span>
+                </div>
+                
+                <div style={styles.mobileRow}>
+                  <strong style={styles.mobileLabel}>Telefone:</strong>
+                  <span style={styles.mobileValue}>{pedido.telefone_cliente}</span>
+                </div>
+                
+                <div style={styles.mobileRow}>
+                  <strong style={styles.mobileLabel}>Pizza:</strong>
+                  <span style={styles.mobileValue}>{pedido.pizza}</span>
+                </div>
+                
+                <div style={styles.mobileRow}>
+                  <strong style={styles.mobileLabel}>Ingredientes:</strong>
+                  <span style={styles.mobileValue}>{pedido.ingredientes}</span>
+                </div>
+                
+                <div style={styles.mobileRow}>
+                  <strong style={styles.mobileLabel}>Valor:</strong>
+                  <span style={styles.mobileValue}>R$ {pedido.valor.toFixed(2)}</span>
+                </div>
+                
+                <div style={styles.mobileRow}>
+                  <strong style={styles.mobileLabel}>Data/Hora:</strong>
+                  <span style={styles.mobileValue}>
+                    {new Date(pedido.data_hora).toLocaleDateString()}<br />
+                    <small style={styles.hora}>
+                      {new Date(pedido.data_hora).toLocaleTimeString()}
+                    </small>
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    } else {
+      return (
+        <div style={styles.tableContainer}>
+          <div style={styles.tableResponsive}>
+            <table style={styles.table}>
+              <thead style={styles.tableHeader}>
+                <tr>
+                  <th style={styles.th}>ID</th>
+                  <th style={styles.th}>Cliente</th>
+                  <th style={styles.th}>Telefone</th>
+                  <th style={styles.th}>Pizza</th>
+                  <th style={styles.th}>Valor</th>
+                  <th style={styles.th}>Data/Hora</th>
+                  <th style={styles.th}>Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pedidos.map((pedido) => (
+                  <tr key={pedido.id} style={styles.tableRow}>
+                    <td style={styles.td}>
+                      <span style={styles.pedidoId}>#{pedido.id}</span>
+                    </td>
+                    <td style={styles.td}>
+                      <div style={styles.clienteInfo}>
+                        <strong style={styles.clienteNome}>{pedido.nome_cliente}</strong>
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      <span style={styles.telefone}>{pedido.telefone_cliente}</span>
+                    </td>
+                    <td style={styles.td}>
+                      <div style={styles.pizzaInfo}>
+                        <strong style={styles.pizzaNome}>{pedido.pizza}</strong>
+                        <span style={styles.ingredientes}>{pedido.ingredientes}</span>
+                      </div>
+                    </td>
+                    <td style={styles.td}>
+                      <span style={styles.valor}>R$ {pedido.valor.toFixed(2)}</span>
+                    </td>
+                    <td style={styles.td}>
+                      <span style={styles.dataHora}>
+                        {new Date(pedido.data_hora).toLocaleDateString()}
+                        <br />
+                        <small style={styles.hora}>
+                          {new Date(pedido.data_hora).toLocaleTimeString()}
+                        </small>
+                      </span>
+                    </td>
+                    <td style={styles.td}>
+                      <div style={styles.actions}>
+                        <button
+                          onClick={() => handleImprimirComanda(pedido)}
+                          style={styles.printButton}
+                          title={`Imprimir comanda do pedido #${pedido.id}`}
+                        >
+                          <IconWrapper>
+                            <FaPrint size={14} />
+                          </IconWrapper>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleCliqueWhatsApp(pedido.telefone_cliente, pedido.nome_cliente, pedido.id)}
+                          style={styles.whatsappButton}
+                          title={`Enviar mensagem para ${pedido.nome_cliente}`}
+                        >
+                          <IconWrapper>
+                            <FaWhatsapp size={14} />
+                          </IconWrapper>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleEditarPedido(pedido)}
+                          style={styles.editButton}
+                          title={`Editar pedido #${pedido.id}`}
+                        >
+                          <IconWrapper>
+                            <FaEdit size={14} />
+                          </IconWrapper>
+                        </button>
+                        
+                        <button
+                          onClick={() => handleExcluirPedido(pedido.id)}
+                          disabled={processando}
+                          style={{
+                            ...styles.deleteButton,
+                            ...(processando ? styles.disabledButton : {})
+                          }}
+                          title={`Excluir pedido #${pedido.id}`}
+                        >
+                          <IconWrapper>
+                            {processando ? <FaSpinner size={14} style={styles.spinner} /> : <FaTrash size={14} />}
+                          </IconWrapper>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+  };
+
   return (
     <div style={styles.container}>
       <header style={styles.header}>
@@ -385,105 +598,7 @@ const AdminPanel: React.FC = () => {
             <p style={styles.emptyText}>Não há pedidos registrados no momento.</p>
           </div>
         ) : (
-          <div style={styles.tableContainer}>
-            <div style={styles.tableResponsive}>
-              <table style={styles.table}>
-                <thead style={styles.tableHeader}>
-                  <tr>
-                    <th style={styles.th}>ID</th>
-                    <th style={styles.th}>Cliente</th>
-                    <th style={styles.th}>Telefone</th>
-                    <th style={styles.th}>Pizza</th>
-                    <th style={styles.th}>Valor</th>
-                    <th style={styles.th}>Data/Hora</th>
-                    <th style={styles.th}>Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pedidos.map((pedido) => (
-                    <tr key={pedido.id} style={styles.tableRow}>
-                      <td style={styles.td}>
-                        <span style={styles.pedidoId}>#{pedido.id}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.clienteInfo}>
-                          <strong style={styles.clienteNome}>{pedido.nome_cliente}</strong>
-                        </div>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.telefone}>{pedido.telefone_cliente}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.pizzaInfo}>
-                          <strong style={styles.pizzaNome}>{pedido.pizza}</strong>
-                          <span style={styles.ingredientes}>{pedido.ingredientes}</span>
-                        </div>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.valor}>R$ {pedido.valor.toFixed(2)}</span>
-                      </td>
-                      <td style={styles.td}>
-                        <span style={styles.dataHora}>
-                          {new Date(pedido.data_hora).toLocaleDateString()}
-                          <br />
-                          <small style={styles.hora}>
-                            {new Date(pedido.data_hora).toLocaleTimeString()}
-                          </small>
-                        </span>
-                      </td>
-                      <td style={styles.td}>
-                        <div style={styles.actions}>
-                          <button
-                            onClick={() => handleImprimirComanda(pedido)}
-                            style={styles.printButton}
-                            title={`Imprimir comanda do pedido #${pedido.id}`}
-                          >
-                            <IconWrapper>
-                              <FaPrint size={14} />
-                            </IconWrapper>
-                          </button>
-                          
-                          <button
-                            onClick={() => handleCliqueWhatsApp(pedido.telefone_cliente, pedido.nome_cliente, pedido.id)}
-                            style={styles.whatsappButton}
-                            title={`Enviar mensagem para ${pedido.nome_cliente}`}
-                          >
-                            <IconWrapper>
-                              <FaWhatsapp size={14} />
-                            </IconWrapper>
-                          </button>
-                          
-                          <button
-                            onClick={() => handleEditarPedido(pedido)}
-                            style={styles.editButton}
-                            title={`Editar pedido #${pedido.id}`}
-                          >
-                            <IconWrapper>
-                              <FaEdit size={14} />
-                            </IconWrapper>
-                          </button>
-                          
-                          <button
-                            onClick={() => handleExcluirPedido(pedido.id)}
-                            disabled={processando}
-                            style={{
-                              ...styles.deleteButton,
-                              ...(processando ? styles.disabledButton : {})
-                            }}
-                            title={`Excluir pedido #${pedido.id}`}
-                          >
-                            <IconWrapper>
-                              {processando ? <FaSpinner size={14} style={styles.spinner} /> : <FaTrash size={14} />}
-                            </IconWrapper>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+          renderPedidos()
         )}
       </main>
 
@@ -793,6 +908,64 @@ const styles = {
     justifyContent: 'flex-start',
   },
   
+  // Estilos para versão mobile
+  mobileContainer: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '1rem',
+  },
+  
+  mobileCard: {
+    backgroundColor: 'white',
+    borderRadius: '8px',
+    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+    border: '1px solid #e2e8f0',
+    padding: '1rem',
+  },
+  
+  mobileCardHeader: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: '1rem',
+    borderBottom: '1px solid #e2e8f0',
+    paddingBottom: '0.5rem',
+  },
+  
+  mobileActions: {
+    display: 'flex',
+    gap: '0.5rem',
+  },
+  
+  mobileCardBody: {
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: '0.5rem',
+  },
+  
+  mobileRow: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    flexWrap: 'wrap' as const,
+    padding: '0.25rem 0',
+  },
+  
+  mobileLabel: {
+    fontWeight: '600',
+    color: '#718096',
+    fontSize: '0.875rem',
+    minWidth: '100px',
+    marginRight: '0.5rem',
+  },
+  
+  mobileValue: {
+    flex: 1,
+    textAlign: 'right' as const,
+    fontSize: '0.875rem',
+    color: '#4a5568',
+  },
+  
   printButton: {
     padding: '0.5rem',
     backgroundColor: '#6b7280',
@@ -987,6 +1160,9 @@ const styles = {
     gap: '0.75rem',
     justifyContent: 'flex-end',
     marginTop: '1.5rem',
+    '@media (max-width: 480px)': {
+      justifyContent: 'center',
+    },
   },
   
   cancelButton: {
